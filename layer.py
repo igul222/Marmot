@@ -16,9 +16,3 @@ class Layer(object):
         self.inputs = None
         self.params = None
         self.activations = None
-
-    def cost():
-        raise NotImplemented
-
-    def accuracy():
-        raise NotImplemented

@@ -15,8 +15,8 @@ class CostLayer(Layer):
 
         self.targets = None
 
-    def cost():
+    def cost(self):
         raise NotImplemented
 
-    def accuracy():
+    def accuracy(self):
         raise NotImplemented

@@ -13,17 +13,17 @@ class SoftmaxLayer(CostLayer):
     determine a class membership probability.
     """
 
-    def __init__(self, prev_layer, n_out):
+    def __init__(self, prev_layer, n):
         """Initialize the parameters of the logistic regression
 
-        :type n_out: int
-        :param n_out: number of output units, the dimension of the space in
+        :type n: int
+        :param n: number of units, the dimension of the space in
                       which the labels lie
         """
         super(SoftmaxLayer, self).__init__()
 
-        self.n_in = prev_layer.n_out
-        self.n_out = n_out
+        self.n_in = prev_layer.n_in
+        self.n_out = n
 
         self.inputs = prev_layer.inputs
 
