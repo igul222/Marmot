@@ -14,5 +14,6 @@ class Layer(object):
         self.n_out = None
 
         self.inputs = None
+        self.weight_params = None
         self.params = None
         self.activations = None

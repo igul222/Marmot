@@ -48,6 +48,7 @@ class SoftmaxLayer(CostLayer):
         )
 
         # Parameters of the model
+        self.weight_params = prev_layer.weight_params + [weights]
         self.params = prev_layer.params + [weights, biases]
 
         # Targets variable that the model uses to calculate cost and accuracy;

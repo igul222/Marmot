@@ -19,4 +19,5 @@ class InputLayer(Layer):
     self.inputs = T.matrix(self.uuid + '_inputs')
     self.activations = self.inputs
 
+    self.weight_params = []
     self.params = []
