@@ -26,12 +26,12 @@ class SGD(object):
         outputs=cost,
         updates=updates,
         givens={
-          model.inputs:  training_data[0][index * self._minibatch_size : (index + 1) * self._minibatch_size],
-          model.targets: training_data[1][index * self._minibatch_size : (index + 1) * self._minibatch_size]
+          model.inputs:  training_data.inputs[index * self._minibatch_size : (index + 1) * self._minibatch_size],
+          model.targets: training_data.targets[index * self._minibatch_size : (index + 1) * self._minibatch_size]
           }
         )
 
-    minibatch_count = training_data[0].get_value(borrow=True).shape[0] / self._minibatch_size
+    minibatch_count = training_data.example_count / self._minibatch_size
 
     def train():
       return [train_minibatch(i) for i in xrange(minibatch_count)]
