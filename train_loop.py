@@ -29,7 +29,7 @@ def train_loop(model,
                strategy,
                training_data,
                validation_data,
-               patience=20,
+               patience_factor=2,
                validation_frequency=1):
 
     """Run to completion a training loop with early stopping."""
@@ -61,7 +61,7 @@ def train_loop(model,
     best_validation_accuracy = -numpy.inf
     best_validation_epoch = 0
 
-    while epoch < best_validation_epoch + patience:
+    while epoch <= max(validation_frequency, best_validation_epoch * patience_factor):
         epoch += 1
         start_time = time.clock()
 

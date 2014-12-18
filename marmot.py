@@ -25,4 +25,4 @@ l2reg = L2RegLayer(prev_layer=softmax, reg_weight = 0.0001)
 strategy = SGD(learning_rate = 0.01, minibatch_size = 20)
 
 # Initialize and run the training loop
-train_loop(l2reg, strategy, training_data, validation_data, patience=20, validation_frequency=10)
+train_loop(l2reg, strategy, training_data, validation_data, patience_factor=2, validation_frequency=10)
