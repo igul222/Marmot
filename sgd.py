@@ -1,14 +1,14 @@
 import theano
 import theano.tensor as T
-
+from sgd_standard import Standard
 
 class SGD(object):
 
   def __init__(self,
-               learning_rate=0.1,
                minibatch_size=128,
+               learning_rule=Standard()
                ):
-    self._learning_rate = learning_rate
+    self._learning_rule = learning_rule
     self._minibatch_size = minibatch_size
 
   def training_function(self, model, training_data):
@@ -16,10 +16,11 @@ class SGD(object):
     
     cost = model.cost()
 
-    updates = [
-      ( param, param - self._learning_rate * T.grad(cost, wrt=param) )
-      for param in model.params
-      ]
+    updates = []
+    for param in model.params:
+      grad = T.grad(cost, wrt=param)
+      param_updates = self._learning_rule.get_updates(param, grad)
+      updates.extend(param_updates)
 
     train_minibatch = theano.function(
         inputs=[index],

@@ -4,6 +4,8 @@ from softmax_layer import SoftmaxLayer
 from l2reg_layer import L2RegLayer
 
 from sgd import SGD
+from sgd_standard import Standard
+from sgd_adadelta import Adadelta
 from train_loop import train_loop
 
 import gzip
@@ -22,7 +24,8 @@ softmax = SoftmaxLayer(prev_layer=hidden, n=10)
 l2reg = L2RegLayer(prev_layer=softmax, reg_weight = 0.0001)
 
 # Define a learning strategy
-strategy = SGD(learning_rate = 0.01, minibatch_size = 20)
+learning_rule = Standard(learning_rate=0.01)
+strategy = SGD(minibatch_size = 128, learning_rule=learning_rule)
 
 # Initialize and run the training loop
 train_loop(l2reg, strategy, training_data, validation_data, patience_factor=2, validation_frequency=10)
