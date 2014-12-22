@@ -13,10 +13,10 @@ class CostLayer(Layer):
         """
         super(CostLayer, self).__init__()
 
-        self.targets = None
+        # self.targets = None
 
-    def cost(self):
+    def cost(self, inputs, targets):
         raise NotImplemented
 
-    def accuracy(self):
+    def accuracy(self, inputs, targets):
         raise NotImplemented

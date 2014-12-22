@@ -20,22 +20,12 @@ def train_loop(model,
 
     train = strategy.training_function(model, training_data)
 
-    calculate_training_accuracy = theano.function(
+    calculate_accuracy = theano.function(
         inputs=[],
-        outputs=model.accuracy(),
-        givens={
-          model.inputs:  training_data.inputs,
-          model.targets: training_data.targets
-          }
-    )
-
-    calculate_validation_accuracy = theano.function(
-        inputs=[],
-        outputs=model.accuracy(),
-        givens={
-          model.inputs:  validation_data.inputs,
-          model.targets: validation_data.targets
-          }
+        outputs=[
+          model.accuracy(training_data.inputs, training_data.targets),
+          model.accuracy(validation_data.inputs, validation_data.targets)
+          ]
     )
 
     epoch = 0
@@ -44,21 +34,20 @@ def train_loop(model,
 
     while epoch <= max(validation_frequency, best_validation_epoch * patience_factor):
         epoch += 1
-        start_time = time.clock()
+        start_time = time.time()
 
         training_data.shuffle()
-        costs = train()
+        mean_cost = train()
 
         print 'epoch {0}: took {1}s, mean training cost {2}'.format(
             epoch,
-            time.clock() - start_time,
-            numpy.mean(costs)
+            time.time() - start_time,
+            mean_cost
             )
 
         if epoch % validation_frequency == 0:
 
-            training_accuracy = calculate_training_accuracy()
-            validation_accuracy = calculate_validation_accuracy()
+            training_accuracy, validation_accuracy = calculate_accuracy()
 
             if validation_accuracy > best_validation_accuracy:
                 best_validation_accuracy = validation_accuracy

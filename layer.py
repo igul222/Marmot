@@ -13,7 +13,7 @@ class Layer(object):
         self.n_in = None
         self.n_out = None
 
-        self.inputs = None
+        # self.inputs = None
         self.weight_params = None
         self.params = None
-        self.activations = None
+        # self.activations = None

@@ -21,10 +21,10 @@ f.close()
 inputs = InputLayer(28 * 28) # Each MNIST image has size 28*28
 hidden = TanhLayer(prev_layer=inputs, n=500)
 softmax = SoftmaxLayer(prev_layer=hidden, n=10)
-l2reg = L2RegLayer(prev_layer=softmax, reg_weight = 0.0001)
+l2reg = L2RegLayer(prev_layer=softmax, reg_weight = 1e-3)
 
 # Define a learning strategy
-learning_rule = Adadelta(decay = 0.90, epsilon = 0.0000001)
+learning_rule = Adadelta(decay = 0.90, epsilon = 1e-6)
 strategy = SGD(minibatch_size = 128, learning_rule=learning_rule)
 
 # Initialize and run the training loop

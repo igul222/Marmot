@@ -1,40 +1,53 @@
+import numpy
 import theano
 import theano.tensor as T
 from sgd_standard import Standard
 
 class SGD(object):
 
-  def __init__(self,
-               minibatch_size=128,
-               learning_rule=Standard()
-               ):
-    self._learning_rule = learning_rule
-    self._minibatch_size = minibatch_size
+    def __init__(self,
+                 minibatch_size=128,
+                 learning_rule=Standard(),
+                 use_theano_scan=False
+                 ):
+        self._learning_rule = learning_rule
+        self._minibatch_size = minibatch_size
+        self._use_theano_scan = use_theano_scan
+    def training_function(self, model, training_data):
 
-  def training_function(self, model, training_data):
-    index = T.iscalar()
-    
-    cost = model.cost()
+        def train_minibatch(index):
+            inputs = training_data.inputs[index * self._minibatch_size : (index + 1) * self._minibatch_size]
+            targets = training_data.targets[index * self._minibatch_size : (index + 1) * self._minibatch_size]
 
-    updates = []
-    for param in model.params:
-      grad = T.grad(cost, wrt=param)
-      param_updates = self._learning_rule.get_updates(param, grad)
-      updates.extend(param_updates)
+            cost = model.cost(inputs, targets)
 
-    train_minibatch = theano.function(
-        inputs=[index],
-        outputs=cost,
-        updates=updates,
-        givens={
-          model.inputs:  training_data.inputs[index * self._minibatch_size : (index + 1) * self._minibatch_size],
-          model.targets: training_data.targets[index * self._minibatch_size : (index + 1) * self._minibatch_size]
-          }
-        )
+            updates = []
+            for param in model.params:
+                grad = T.grad(cost, wrt=param)
+                param_updates = self._learning_rule.get_updates(param, grad)
+                updates.extend(param_updates)
 
-    minibatch_count = training_data.example_count / self._minibatch_size
+            return cost, updates
 
-    def train():
-      return [train_minibatch(i) for i in xrange(minibatch_count)]
+        minibatch_count = training_data.example_count / self._minibatch_size
 
-    return train
+        # theano.scan is slower than a straight python loop (their fault,
+        # not ours), but maybe one day it'll become faster, so it's left in here
+        # as an option.
+        if self._use_theano_scan:
+            costs, updates = theano.scan(
+                fn=train_minibatch,
+                sequences=[T.cast(T.arange(minibatch_count), 'int32')]
+                )
+
+            return theano.function([], T.mean(costs), updates=updates)
+        else:
+            index = T.iscalar()
+            cost, updates = train_minibatch(index)
+            train_minibatch_fn = theano.function([index], cost, updates=updates)
+
+            def train():
+                costs = [train_minibatch_fn(i) for i in xrange(minibatch_count)]
+                return numpy.mean(costs)
+
+            return train

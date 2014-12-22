@@ -18,7 +18,9 @@ class TanhLayer(Layer):
         self.n_in = prev_layer.n_in
         self.n_out = n
 
-        self.inputs = prev_layer.inputs
+        # self.inputs = prev_layer.inputs
+
+        self._prev_layer = prev_layer
 
         weight_values = numpy.asarray(
             rng.uniform(
@@ -28,22 +30,27 @@ class TanhLayer(Layer):
                 ),
             dtype=theano.config.floatX
             )
-        weights = theano.shared(
+        self._weights = theano.shared(
             value=weight_values, 
             name=self.uuid + '_weights',
             borrow=True
             )
 
         bias_values = numpy.zeros((self.n_out,), dtype=theano.config.floatX)
-        biases = theano.shared(
+        self._biases = theano.shared(
             value=bias_values,
             name=self.uuid + '_biases',
             borrow=True
             )
 
-        self.weight_params = prev_layer.weight_params + [weights]
-        self.params = prev_layer.params + [weights, biases]
+        self.weight_params = prev_layer.weight_params + [self._weights]
+        self.params = prev_layer.params + [self._weights, self._biases]
 
-        self.activations = T.tanh(
-            T.dot(prev_layer.activations, weights) + biases
+        # self.activations = T.tanh(
+        #     T.dot(prev_layer.activations, weights) + biases
+        #     )
+
+    def activations(self, inputs):
+        return T.tanh(
+            T.dot(self._prev_layer.activations(inputs), self._weights) + self._biases
             )

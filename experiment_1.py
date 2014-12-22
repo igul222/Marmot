@@ -1,31 +1,17 @@
-from input_layer import InputLayer
-from tanh_layer import TanhLayer
-from softmax_layer import SoftmaxLayer
-from l2reg_layer import L2RegLayer
+import theano
+import theano.tensor as T
 
-from sgd import SGD
-from sgd_standard import Standard
-from sgd_adadelta import Adadelta
-from train_loop import train_loop
 
-import gzip
-import cPickle
+inputs = T.tensor3()
+weights = T.vector()
+biases = T.scalar()
 
-# Data file can be downloaded from: 
-# http://www.iro.umontreal.ca/~lisa/deep/data/mnist/mnist.pkl.gz
-f = gzip.open('data/mnist.pkl.gz', 'rb')
-training_data, validation_data, test_data = cPickle.load(f)
-f.close()
+activations = T.dot(inputs, weights) + biases
 
-# Build the model by composing layers
-inputs = InputLayer(28 * 28) # Each MNIST image has size 28*28
-hidden = TanhLayer(prev_layer=inputs, n=500)
-softmax = SoftmaxLayer(prev_layer=hidden, n=10)
-l2reg = L2RegLayer(prev_layer=softmax, reg_weight = 0.0001)
+run = theano.function([inputs, weights, biases], activations)
 
-# Define a learning strategy
-learning_rule = Standard(learning_rate=0.01)
-strategy = SGD(minibatch_size = 128, learning_rule=learning_rule)
+_inputs = [[[1,2,3],[4,5,6]], [[1,2,3],[4,5,6]]]
+_weights = [0,1,0]
+_biases = 10
 
-# Initialize and run the training loop
-train_loop(l2reg, strategy, training_data, validation_data, patience_factor=2, validation_frequency=10)
+print run(_inputs, _weights, _biases)
