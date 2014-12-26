@@ -2,7 +2,7 @@ from layer import Layer
 
 import theano.tensor as T
 
-class InputLayer(Layer):
+class Input(Layer):
 
     def __init__(self, n):
         """Initialize the input layer.
@@ -11,7 +11,7 @@ class InputLayer(Layer):
         :param n: number input units; the dimension of the space in which the
                   inputs lie.
         """
-        super(InputLayer, self).__init__()
+        super(Input, self).__init__()
 
         self.n_in = n
         self.n_out = n

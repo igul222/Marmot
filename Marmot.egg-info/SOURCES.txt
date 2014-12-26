@@ -1,0 +1,9 @@
+setup.py
+Marmot.egg-info/PKG-INFO
+Marmot.egg-info/SOURCES.txt
+Marmot.egg-info/dependency_links.txt
+Marmot.egg-info/top_level.txt
+marmot/__init__.py
+marmot/dataset.py
+marmot/train_loop.py
+test/test_dataset.py

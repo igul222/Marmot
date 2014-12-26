@@ -1,22 +1,24 @@
-from dataset import Dataset
-
 import numpy
 import theano
 import theano.tensor as T
 
 import time
 
+# KNOWN ISSUE: when computing mean cost / accuracy over minibatches, the last minibatch (which is smaller)
+# is given the same weight as all the others -- which is bad. It's not a huge deal but should be eventually fixed.
+
+# RELATED KNOWN ISSUE: In SGD the last batch will effectively be given more weight, for the same reason.
+# This is mitigated by shuffling the training examples before each epoch, but still should be fixed eventually.
+
 def train_loop(model,
                strategy,
                training_data,
                validation_data,
+               min_patience=50,
                patience_factor=2,
                validation_frequency=1):
 
     """Run to completion a training loop with early stopping."""
-
-    training_data = Dataset(training_data)
-    validation_data = Dataset(validation_data)
 
     train = strategy.training_function(model, training_data)
 
@@ -32,7 +34,7 @@ def train_loop(model,
     best_validation_accuracy = -numpy.inf
     best_validation_epoch = 0
 
-    while epoch <= max(validation_frequency, best_validation_epoch * patience_factor):
+    while epoch < max(validation_frequency, min_patience, best_validation_epoch * patience_factor):
         epoch += 1
         start_time = time.time()
 

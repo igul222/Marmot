@@ -1,6 +1,6 @@
 from layer import Layer
 
-class CostLayer(Layer):
+class Cost(Layer):
     """Abstract base class for layers which define cost functions.
        These layers are trainable and usually the last layer in a network.
     """
@@ -11,9 +11,7 @@ class CostLayer(Layer):
         Subclasses must provide a value for all attributes set to None here,
         as well as those in Layer.
         """
-        super(CostLayer, self).__init__()
-
-        # self.targets = None
+        super(Cost, self).__init__()
 
     def cost(self, inputs, targets):
         raise NotImplemented

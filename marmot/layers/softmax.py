@@ -1,10 +1,10 @@
-from cost_layer import CostLayer
+from cost import Cost
 
 import numpy
 import theano
 import theano.tensor as T
 
-class SoftmaxLayer(CostLayer):
+class Softmax(Cost):
     """Multi-class Logistic Regression Class
 
     The logistic regression is fully described by a weight matrix :math:`W`
@@ -20,7 +20,7 @@ class SoftmaxLayer(CostLayer):
         :param n: number of units, the dimension of the space in
                       which the labels lie
         """
-        super(SoftmaxLayer, self).__init__()
+        super(Softmax, self).__init__()
 
         self.n_in = prev_layer.n_in
         self.n_out = n
@@ -66,13 +66,19 @@ class SoftmaxLayer(CostLayer):
     def activations(self, inputs):
         # Dot the inputs with the weights, add the biases, and apply softmax.
         # Softmax activations can be interpreted as P(y|x)
-        return T.nnet.softmax(
-            T.dot(self._prev_layer.activations(inputs), self._weights) + self._biases
-            )        
+        weighted_inputs = T.dot(self._prev_layer.activations(inputs), self._weights) + self._biases
+
+        # T.nnet.softmax will not operate on T.tensor3 types, only matrices
+        # We take our n_steps x n_seq x n_classes output from the net
+        # and reshape it into a (n_steps * n_seq) x n_classes matrix
+        # apply softmax, then reshape back
+        reshaped = T.reshape(weighted_inputs, (weighted_inputs.shape[0] * weighted_inputs.shape[1], -1))
+        reshaped_softmax = T.nnet.softmax(reshaped)
+        return T.reshape(reshaped_softmax, weighted_inputs.shape)
 
     def _y_pred(self, inputs):
         # Predicted value of y = the index of the P(y|x) vector whose value is maximal.
-        return T.argmax(self.activations(inputs), axis=1)
+        return T.argmax(self.activations(inputs), axis=inputs.type.ndim - 1)
 
     def cost(self, inputs, targets):
         """Return the mean of the negative log-likelihood of the prediction
@@ -86,13 +92,13 @@ class SoftmaxLayer(CostLayer):
               the learning rate is less dependent on the batch size
         """
 
-        # y.shape[0] is (symbolically) the number of rows in y, 
+        # y.shape[-1] is (symbolically) the number of rows in y, 
         # i.e. the number of examples in the minibatch.
-        example_count = targets.shape[0]
+        # example_count = targets.shape[-1]
 
         # T.arange(n) is a symbolic vector which will contain
-        # [0,1,2,... n-1] 
-        example_indices = T.arange(example_count)
+        # [0,1,2,... n-1]
+        # example_indices = T.arange(example_count)
 
         # T.log(self.activations) is a matrix of Log-Probabilities
         # with one row per example and one column per class.
@@ -100,9 +106,22 @@ class SoftmaxLayer(CostLayer):
 
         # lp[example_indices, y] is a vector containing the LP of
         # the correct label for each example in the minibatch.
-        errors = lp[example_indices, targets]
 
-        return -T.mean(errors)
+        # negative log likelihood based on multiclass cross entropy error
+        #
+        # Theano's advanced indexing is limited
+        # therefore we reshape our n_steps x n_seq x n_classes tensor3 of probs
+        # to a (n_steps * n_seq) x n_classes matrix of probs
+        # so that we can use advanced indexing (i.e. get the probs which
+        # correspond to the true class)
+        # the labels y also must be flattened when we do this to use the
+        # advanced indexing
+        flat_lp = T.reshape(lp, (lp.shape[0] * lp.shape[1], -1))
+        flat_targets = targets.flatten(ndim=1)
+        return -T.mean(flat_lp[T.arange(flat_lp.shape[0]), flat_targets])
+
+        # return -T.mean(errors)
+
 
     def accuracy(self, inputs, targets):
         """Return a float representing the number of errors in the minibatch

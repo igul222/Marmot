@@ -1,10 +1,10 @@
-from cost_layer import CostLayer
+from cost import Cost
 
-class L2RegLayer(CostLayer):
+class L2Reg(Cost):
     """Layer that provides L2 regularization on top of another cost layer."""
 
     def __init__(self, prev_layer, reg_weight=1):
-        super(CostLayer, self).__init__()
+        super(L2Reg, self).__init__()
 
         self._prev_layer = prev_layer
         self._reg_weight = reg_weight

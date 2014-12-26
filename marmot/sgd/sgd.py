@@ -1,7 +1,8 @@
 import numpy
 import theano
 import theano.tensor as T
-from sgd_standard import Standard
+
+from standard import Standard
 
 class SGD(object):
 
@@ -16,8 +17,12 @@ class SGD(object):
     def training_function(self, model, training_data):
 
         def train_minibatch(index):
-            inputs = training_data.inputs[index * self._minibatch_size : (index + 1) * self._minibatch_size]
-            targets = training_data.targets[index * self._minibatch_size : (index + 1) * self._minibatch_size]
+            if training_data.inputs.type.ndim == 3:
+                inputs = training_data.inputs[:, index * self._minibatch_size : (index + 1) * self._minibatch_size]
+                targets = training_data.targets[:, index * self._minibatch_size : (index + 1) * self._minibatch_size]
+            else:
+                inputs = training_data.inputs[index * self._minibatch_size : (index + 1) * self._minibatch_size]
+                targets = training_data.targets[index * self._minibatch_size : (index + 1) * self._minibatch_size]
 
             cost = model.cost(inputs, targets)
 
@@ -44,10 +49,11 @@ class SGD(object):
         else:
             index = T.iscalar()
             cost, updates = train_minibatch(index)
+
             train_minibatch_fn = theano.function([index], cost, updates=updates)
 
             def train():
                 costs = [train_minibatch_fn(i) for i in xrange(minibatch_count)]
-                return numpy.mean(costs)
+                return numpy.mean(costs) # TODO investigate
 
             return train

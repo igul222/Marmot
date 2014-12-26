@@ -1,26 +1,25 @@
-from layer import Layer
-
 import numpy
 import theano
 import theano.tensor as T
 
-class TanhLayer(Layer):
+from layer import Layer
+
+class Feedforward(Layer):
     """Feedforward layer with tanh activation function."""
 
-    def __init__(self, prev_layer, n):
+    def __init__(self, prev_layer, n, activation_fn = T.tanh):
         """Initialize the layer.
         Subclasses must provide a value for all attributes set to None here.
         """
-        super(TanhLayer, self).__init__()
+        super(Feedforward, self).__init__()
 
-        rng = numpy.random.RandomState()
+        self._prev_layer = prev_layer
+        self._activation_fn = activation_fn
 
         self.n_in = prev_layer.n_in
         self.n_out = n
 
-        # self.inputs = prev_layer.inputs
-
-        self._prev_layer = prev_layer
+        rng = numpy.random.RandomState()
 
         weight_values = numpy.asarray(
             rng.uniform(
@@ -51,6 +50,6 @@ class TanhLayer(Layer):
         #     )
 
     def activations(self, inputs):
-        return T.tanh(
+        return self._activation_fn(
             T.dot(self._prev_layer.activations(inputs), self._weights) + self._biases
             )
