@@ -22,13 +22,8 @@ def train_loop(model,
 
     train = strategy.training_function(model, training_data)
 
-    calculate_accuracy = theano.function(
-        inputs=[],
-        outputs=[
-          model.accuracy(training_data.inputs, training_data.targets),
-          model.accuracy(validation_data.inputs, validation_data.targets)
-          ]
-    )
+    calculate_training_accuracy = _accuracy_function(model, training_data)
+    calculate_validation_accuracy = _accuracy_function(model, validation_data)
 
     epoch = 0
     best_validation_accuracy = -numpy.inf
@@ -49,7 +44,8 @@ def train_loop(model,
 
         if epoch % validation_frequency == 0:
 
-            training_accuracy, validation_accuracy = calculate_accuracy()
+            training_accuracy = calculate_training_accuracy()
+            validation_accuracy = calculate_validation_accuracy()
 
             if validation_accuracy > best_validation_accuracy:
                 best_validation_accuracy = validation_accuracy
@@ -62,3 +58,25 @@ def train_loop(model,
                 best_validation_accuracy * 100.,
                 epoch - best_validation_epoch
                 )
+
+def _accuracy_function(model, dataset):
+    """
+    Compile and return a function that calculates the given model's accuracy on
+    the given dataset.
+
+    (We do this calculation in minibatches to conserve memory.)
+    """
+
+    minibatch_index = T.iscalar()
+    inputs, targets = dataset.minibatch(minibatch_index)
+
+    mb_accuracy = theano.function(
+        inputs=[minibatch_index],
+        outputs=[model.accuracy(inputs, targets)]
+    )
+
+    def mean_accuracy():
+        accuracies = [mb_accuracy(i) for i in xrange(dataset.minibatch_count)]
+        return numpy.mean(accuracies)
+
+    return mean_accuracy

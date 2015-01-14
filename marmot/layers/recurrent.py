@@ -46,17 +46,17 @@ class Recurrent(Layer):
 
     def activations(self, inputs):
         prev_layer_activations = self._prev_layer.activations(inputs)
+        biased_weighted_inputs = T.dot(prev_layer_activations, self._input_weights) + self._biases
 
-        def step(current_prev_layer_activations, last_activations):
+        def step(current_biased_weighted_inputs, last_activations):
             return T.tanh(
-                T.dot(current_prev_layer_activations, self._input_weights) + 
-                T.dot(last_activations, self._recurrent_weights) + 
-                self._biases
+                current_biased_weighted_inputs +
+                T.dot(last_activations, self._recurrent_weights)
             )
 
         activations, updates = theano.scan(
             step,
-            sequences=prev_layer_activations,
+            sequences=biased_weighted_inputs,
             outputs_info=T.alloc(self._h0, inputs.shape[1], self.n_out)
             )
 

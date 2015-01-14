@@ -7,22 +7,16 @@ from standard import Standard
 class SGD(object):
 
     def __init__(self,
-                 minibatch_size=128,
                  learning_rule=Standard(),
                  use_theano_scan=False
                  ):
         self._learning_rule = learning_rule
-        self._minibatch_size = minibatch_size
         self._use_theano_scan = use_theano_scan
+
     def training_function(self, model, training_data):
 
         def train_minibatch(index):
-            if training_data.inputs.type.ndim == 3:
-                inputs = training_data.inputs[:, index * self._minibatch_size : (index + 1) * self._minibatch_size]
-                targets = training_data.targets[:, index * self._minibatch_size : (index + 1) * self._minibatch_size]
-            else:
-                inputs = training_data.inputs[index * self._minibatch_size : (index + 1) * self._minibatch_size]
-                targets = training_data.targets[index * self._minibatch_size : (index + 1) * self._minibatch_size]
+            inputs, targets = training_data.minibatch(index)
 
             cost = model.cost(inputs, targets)
 
@@ -34,7 +28,7 @@ class SGD(object):
 
             return cost, updates
 
-        minibatch_count = training_data.example_count / self._minibatch_size
+        minibatch_count = training_data.minibatch_count
 
         # theano.scan is slower than a straight python loop (their fault,
         # not ours), but maybe one day it'll become faster, so it's left in here

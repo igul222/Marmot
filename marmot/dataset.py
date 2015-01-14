@@ -4,7 +4,7 @@ import theano.tensor as T
 
 class Dataset(object):
 
-    def __init__(self, inputs, targets):
+    def __init__(self, inputs, targets, minibatch_size=128):
         """Load a dataset into Theano shared variables."""
 
         # Convert to numpy arrays
@@ -57,3 +57,12 @@ class Dataset(object):
             (self.inputs, shuffled_inputs), 
             (_uncast_targets, shuffled_targets)
             ))
+
+        self.minibatch_size = minibatch_size
+        self.minibatch_count = self.example_count / minibatch_size
+
+    def minibatch(self, index):
+        return (
+            self.inputs[:, index * self.minibatch_size : (index + 1) * self.minibatch_size],
+            self.targets[:, index * self.minibatch_size : (index + 1) * self.minibatch_size]
+        )
