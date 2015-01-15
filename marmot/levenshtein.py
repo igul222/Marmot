@@ -2,21 +2,39 @@ import numpy
 import theano
 import theano.tensor as T
 
-def distances(a,b):
+import helpers
 
+def distances(a,b):
+    a = T.as_tensor_variable(a)
+    b = T.as_tensor_variable(b)
+
+    n_strings = a.shape[1]
     i_max = b.shape[0] + a.shape[0]
     j_max = a.shape[0]
 
-    def step(i, prev):
+    def step(i, prev, prev_prev):
         j = T.arange(j_max + 1)
 
         is_initial = T.any([T.eq(j, 0), T.eq(j, i)], axis=0)
         initial_val = T.cast(i, theano.config.floatX)
 
+        x = (i - j) % (b.shape[0] + 1)
+        y = j
+
+        is_initial = T.shape_padright(is_initial).repeat(n_strings, axis=1)
+
         result = T.switch(
             is_initial,
             initial_val,
-            prev
+            T.switch(
+                T.eq(b[x-1], a[y-1]),
+                helpers.right_shift(prev_prev, 1),
+                T.min([
+                    prev,
+                    helpers.right_shift(prev, 1),
+                    helpers.right_shift(prev_prev, 1),
+                ], axis=0) + 1
+            )
         )
 
         return T.cast(result, 'float32')
@@ -24,7 +42,7 @@ def distances(a,b):
     results, _ = theano.scan(
         step,
         sequences=[T.arange(i_max + 1)],
-        outputs_info=T.zeros((j_max + 1,))
+        outputs_info=dict(initial=T.zeros((2,j_max + 1,n_strings)), taps=[-1,-2])
     )
 
     return results.T

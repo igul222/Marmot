@@ -2,6 +2,8 @@ import numpy
 import theano
 import theano.tensor as T
 
+import helpers
+
 # log(0) = -infinity, but this leads to
 # NaN errors in log_add and elsewhere,
 # so we'll just use a large negative value.
@@ -28,13 +30,6 @@ def _log_add_3(log_a, log_b, log_c):
             T.exp(smaller - largest) + 
             T.exp(larger - largest)
             )
-
-def _right_shift(x, shift):
-    """Right-shift rows in a matrix, padding the left with log(0)."""
-    return T.concatenate([
-            T.alloc(_LOG_ZERO, x.shape[0], shift),
-            x[:,:-shift]
-        ], axis=1)
 
 def _initial_probabilities(example_count, target_length):
     """The initial value of the forward-backward
@@ -94,8 +89,8 @@ def _forward_vars(activations, targets):
 
     def step(p_curr, p_prev):
         no_change = p_prev
-        next_label = _right_shift(p_prev, 1)
-        skip = _right_shift(p_prev + skip_allowed, 2)
+        next_label = helpers.right_shift_rows(p_prev, 1, _LOG_ZERO)
+        skip = helpers.right_shift_rows(p_prev + skip_allowed, 2, _LOG_ZERO)
 
         return p_curr + _log_add_3(no_change, next_label, skip)
 

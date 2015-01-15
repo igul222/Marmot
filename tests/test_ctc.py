@@ -20,14 +20,6 @@ class CTCTest(unittest.TestCase):
             numpy.log(2 + 3 + 4)
         )
 
-    def test_right_shift(self):
-        shift = ctc._right_shift(numpy.array([[1,2,3], [4,5,6]]), 1)
-        correct = [
-                [ctc._LOG_ZERO, 1, 2],
-                [ctc._LOG_ZERO, 4, 5]
-            ]
-        helpers.assert_theano_equal(shift, correct)
-
     def test_initial_probabilities(self):
         helpers.assert_theano_equal(
             ctc._initial_probabilities(2, 3),
