@@ -1,7 +1,7 @@
 import layers
 import sgd
+import datasets
 
-from dataset import Dataset
 from train_loop import train_loop
 
 import helpers

@@ -4,7 +4,7 @@ import theano.tensor as T
 
 import helpers
 
-def distances(a,b):
+def distances(a, b, padding_val):
     a = T.as_tensor_variable(a)
     b = T.as_tensor_variable(b)
 
@@ -15,29 +15,48 @@ def distances(a,b):
     def step(i, prev, prev_prev):
         j = T.arange(j_max + 1)
 
-        is_initial = T.any([T.eq(j, 0), T.eq(j, i)], axis=0)
-        initial_val = T.cast(i, theano.config.floatX)
-
         x = (i - j) % (b.shape[0] + 1)
         y = j
 
-        is_initial = T.shape_padright(is_initial).repeat(n_strings, axis=1)
-
-        result = T.switch(
-            is_initial,
-            initial_val,
-            T.switch(
-                T.eq(b[x-1], a[y-1]),
+        # The main rule for filling the matrix:
+        # If current a == current b, keep the val from (x-1,y-1).
+        # Otherwise new val = min(upper, left, upper-left) + 1.
+        new_vals = T.switch(
+            T.eq(b[x-1], a[y-1]),
+            helpers.right_shift(prev_prev, 1),
+            T.min([
+                prev,
+                helpers.right_shift(prev, 1),
                 helpers.right_shift(prev_prev, 1),
-                T.min([
-                    prev,
-                    helpers.right_shift(prev, 1),
-                    helpers.right_shift(prev_prev, 1),
-                ], axis=0) + 1
-            )
+            ], axis=0) + 1
         )
 
-        return T.cast(result, 'float32')
+        # ... but if current a == padding, keep the val from (x, y-1)
+        new_vals = T.switch(
+            T.eq(a[y-1], padding_val),
+            helpers.right_shift(prev, 1),
+            new_vals
+        )
+        # ... likewise if current b == padding, keep the val from (x-1, y)
+        new_vals = T.switch(
+            T.eq(b[x-1], padding_val),
+            prev,
+            new_vals
+        )
+        # (If they're both padding, it doesn't matter which val we keep.)
+
+        # Finally, if the value corresponds to an initial value of the matrix,
+        # use that instead of anything above.
+        is_initial = T.any([T.eq(j, 0), T.eq(j, i)], axis=0)
+        is_initial = T.shape_padright(is_initial).repeat(n_strings, axis=1)
+        initial_val = T.cast(i, theano.config.floatX)
+        new_vals = T.switch(
+            is_initial,
+            initial_val,
+            new_vals
+        )
+
+        return new_vals
 
     results, _ = theano.scan(
         step,
@@ -45,7 +64,7 @@ def distances(a,b):
         outputs_info=dict(initial=T.zeros((2,j_max + 1,n_strings)), taps=[-1,-2])
     )
 
-    return results.T
+    return results[-1, -1, :]#.T
 
 # # NOTE: If this ever becomes a bottleneck, I think there's a more
 # # GPU-friendly implementation possible by scanning along diagonals instead

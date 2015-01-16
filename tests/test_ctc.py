@@ -86,10 +86,35 @@ class CTCTest(unittest.TestCase):
             [[1,0,0], [1,0,0]]
         ], dtype=theano.config.floatX)
         
+        P = ctc.PADDING
         helpers.assert_theano_equal(
             ctc._best_path_decode(activations),
-            [[1,  1],
-             [2,  2],
-             [-1, 2],
-             [-1, 1]]
+            [[1, 1],
+             [2, 2],
+             [P, 2],
+             [P, 1]]
+        )
+
+    def test_accuracy(self):
+        P = ctc.PADDING
+
+        activations = numpy.array([
+            [[0,1,0], [0,1,0]],
+            [[0,1,0], [0,0,1]],
+            [[1,0,0], [1,0,0]],
+            [[0,0,1], [0,0,1]],
+            [[1,0,0], [1,0,0]],
+            [[1,0,0], [1,0,0]]
+        ], dtype=theano.config.floatX)
+
+        targets = numpy.array([
+            [1,1],
+            [2,2],
+            [P,2],
+            [P,1]
+        ], dtype=theano.config.floatX)
+
+        helpers.assert_theano_equal(
+            ctc.accuracy(activations, targets),
+            0.875
         )
