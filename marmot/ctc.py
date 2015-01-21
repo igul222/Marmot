@@ -107,14 +107,20 @@ def _forward_vars(activations, ttargets):
 
     return probabilities
 
-def cost(activations, ttargets):
+def cost(activations, ttargets, target_lengths):
     """Calculate the CTC cost: the mean of the negative log-probabilities of 
        the correct labellings for each example.
 
        The targets passed in should have shape (examples, target length), 
-       which is the transpose of the usual shape."""
+       which is the transpose of the usual shape. They should also have blanks
+       inserted in between symbols, and at the beginning and end."""
+
     forward_vars = _forward_vars(activations, ttargets)
-    return -T.mean(_log_add(forward_vars[-1,:,-1], forward_vars[-1,:,-2]))
+
+    target_lengths = T.cast(target_lengths, 'int32')
+    lp_1 = forward_vars[-1,T.arange(forward_vars.shape[1]),2*target_lengths - 1]
+    lp_2 = forward_vars[-1,T.arange(forward_vars.shape[1]),2*target_lengths]
+    return -T.mean(_log_add(lp_1, lp_2))
 
 def _best_path_decode(activations):
     """Calculate the CTC best-path decoding for a given activation sequence.
@@ -150,11 +156,21 @@ def _best_path_decode(activations):
 
     return decoding
 
-def accuracy(activations, targets):
+def accuracy(activations, targets, target_lengths):
     """Calculate the mean accuracy of a given set of activations w.r.t. given 
        (un-transposed) targets."""
 
-    target_lengths = T.neq(targets, PADDING).sum(axis=0, dtype=theano.config.floatX)
+    targets = T.cast(targets, 'int32')
+
     best_paths = _best_path_decode(activations)
     distances = levenshtein.distances(targets, best_paths, PADDING)
     return numpy.float32(1.0) - T.mean(distances / target_lengths)
+
+def transform_targets(targets):
+    """Transform targets into a format suitable for passing to cost()."""
+
+    reshaped = T.shape_padleft(targets)
+    blanks = T.fill(reshaped, _BLANK)
+    result = T.concatenate([blanks, reshaped]).dimshuffle(1, 0, 2).reshape((2*targets.shape[0], targets.shape[1]))
+    result = T.concatenate([result, T.shape_padleft(result[0])])
+    return result

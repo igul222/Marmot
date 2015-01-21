@@ -16,9 +16,9 @@ class SGD(object):
     def training_function(self, model, training_data):
 
         def train_minibatch(index):
-            inputs, targets = training_data.minibatch(index)
+            minibatch = training_data.minibatch(index)
 
-            cost = model.cost(inputs, targets)
+            cost = model.cost(minibatch)
 
             updates = []
             for param in model.params:

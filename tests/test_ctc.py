@@ -69,11 +69,32 @@ class CTCTest(unittest.TestCase):
             [[0.01, 0.01, 0.01, 0.97]],
             ], dtype=theano.config.floatX)
 
-        targets = numpy.array([[0,1,0,2,0,3,0]], dtype=theano.config.floatX)
+        ttargets = numpy.array([[0,1,0,2,0,3,0]], dtype=theano.config.floatX)
+
+        target_lengths = numpy.array([3], dtype=theano.config.floatX)
 
         helpers.assert_theano_almost_equal(
-            ctc.cost(activations, targets),
+            ctc.cost(activations, ttargets, target_lengths),
             0.101114414632
+        )
+
+    def test_cost_padded_targets(self):
+        activations = numpy.array([
+            [[0.01, 0.98, 0.01], [0.01, 0.01, 0.98]],
+            [[0.98, 0.01, 0.01], [0.01, 0.98, 0.01]]
+        ], dtype=theano.config.floatX)
+
+        P = ctc.PADDING
+        ttargets = numpy.array([
+            [0,1,0,P,0],
+            [0,2,0,1,0]
+        ], dtype=theano.config.floatX)
+
+        target_lengths = numpy.array([1,2], dtype=theano.config.floatX)
+
+        helpers.assert_theano_almost_equal(
+            ctc.cost(activations, ttargets, target_lengths),
+            0.0352776572108
         )
 
     def test_best_path_decode(self):
@@ -114,7 +135,31 @@ class CTCTest(unittest.TestCase):
             [P,1]
         ], dtype=theano.config.floatX)
 
+        target_lengths = numpy.array([2, 4], dtype=theano.config.floatX)
+
         helpers.assert_theano_equal(
-            ctc.accuracy(activations, targets),
+            ctc.accuracy(activations, targets, target_lengths),
             0.875
+        )
+
+    def test_transform_targets(self):
+
+        targets = numpy.array([
+            [1,1],
+            [2,2],
+            [3,2],
+            [4,1]
+        ], dtype=theano.config.floatX)
+
+        helpers.assert_theano_equal(
+            ctc.transform_targets(targets),
+            [[ 0., 0.],
+             [ 1., 1.],
+             [ 0., 0.],
+             [ 2., 2.],
+             [ 0., 0.],
+             [ 3., 2.],
+             [ 0., 0.],
+             [ 4., 1.],
+             [ 0., 0.]]
         )

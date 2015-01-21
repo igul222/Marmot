@@ -33,7 +33,7 @@ def train_loop(model,
         epoch += 1
         start_time = time.time()
 
-        training_data.shuffle()
+        # training_data.shuffle()
         mean_cost = train()
 
         print 'epoch {0}: took {1}s, mean training cost {2}'.format(
@@ -68,11 +68,11 @@ def _accuracy_function(model, dataset):
     """
 
     minibatch_index = T.iscalar()
-    inputs, targets = dataset.minibatch(minibatch_index)
+    minibatch = dataset.minibatch(minibatch_index)
 
     mb_accuracy = theano.function(
         inputs=[minibatch_index],
-        outputs=[model.accuracy(inputs, targets)]
+        outputs=[model.accuracy(minibatch)]
     )
 
     def mean_accuracy():

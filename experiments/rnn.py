@@ -21,8 +21,8 @@ def make_data(delay, n):
 # Load datasets onto the GPU
 training_data = make_data(delay=1000, n=2000)
 validation_data = make_data(delay=1000, n=500)
-training_data = marmot.Dataset(training_data[0], training_data[1], minibatch_size = 64)
-validation_data = marmot.Dataset(validation_data[0], validation_data[1], minibatch_size = 64)
+training_data = marmot.datasets.SequenceDataset(training_data[0], training_data[1], minibatch_size = 128)
+validation_data = marmot.datasets.SequenceDataset(validation_data[0], validation_data[1], minibatch_size = 128)
 
 # Build the model by composing layers
 inputs  = marmot.layers.Input(10)

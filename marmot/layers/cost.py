@@ -13,8 +13,8 @@ class Cost(Layer):
         """
         super(Cost, self).__init__()
 
-    def cost(self, inputs, targets):
+    def cost(self, dataset):
         raise NotImplemented
 
-    def accuracy(self, inputs, targets):
+    def accuracy(self, dataset):
         raise NotImplemented

@@ -12,19 +12,12 @@ class L2Reg(Cost):
         self.n_in = prev_layer.n_in
         self.n_out = prev_layer.n_out
 
-        # self.inputs = prev_layer.inputs
         self.weight_params = prev_layer.weight_params
         self.params = prev_layer.params
-        # self.activations = prev_layer.activations
 
-        # self.targets = prev_layer.targets
-
-    def activations(self, inputs):
-        return self._prev_layer.activations(inputs)
-
-    def cost(self, inputs, targets):
+    def cost(self, dataset):
         reg_term = sum([(w ** 2).sum() for w in self.weight_params])
-        return self._prev_layer.cost(inputs, targets) + (self._reg_weight * reg_term)
+        return self._prev_layer.cost(dataset) + (self._reg_weight * reg_term)
 
-    def accuracy(self, inputs, targets):
-        return self._prev_layer.accuracy(inputs, targets)
+    def accuracy(self, dataset):
+        return self._prev_layer.accuracy(dataset)

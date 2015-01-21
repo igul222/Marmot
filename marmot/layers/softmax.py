@@ -80,7 +80,7 @@ class Softmax(Cost):
         # Predicted value of y = the index of the P(y|x) vector whose value is maximal.
         return T.argmax(self.activations(inputs), axis=inputs.type.ndim - 1)
 
-    def cost(self, inputs, targets):
+    def cost(self, dataset):
         """Return the mean of the negative log-likelihood of the prediction
         of this model under a given target distribution.
 
@@ -92,6 +92,8 @@ class Softmax(Cost):
               the learning rate is less dependent on the batch size
         """
 
+        targets = T.cast(dataset.targets, 'int32')
+
         # y.shape[-1] is (symbolically) the number of rows in y, 
         # i.e. the number of examples in the minibatch.
         # example_count = targets.shape[-1]
@@ -102,7 +104,7 @@ class Softmax(Cost):
 
         # T.log(self.activations) is a matrix of Log-Probabilities
         # with one row per example and one column per class.
-        lp = T.log(self.activations(inputs))
+        lp = T.log(self.activations(dataset.inputs))
 
         # lp[example_indices, y] is a vector containing the LP of
         # the correct label for each example in the minibatch.
@@ -123,7 +125,7 @@ class Softmax(Cost):
         # return -T.mean(errors)
 
 
-    def accuracy(self, inputs, targets):
+    def accuracy(self, dataset):
         """Return a float representing the number of errors in the minibatch
         over the total number of examples of the minibatch ; zero one
         loss over the size of the minibatch
@@ -132,5 +134,5 @@ class Softmax(Cost):
         :param y: corresponds to a vector that gives for each example the
                   correct label
         """
-
-        return T.mean(T.eq(self._y_pred(inputs), targets))
+        targets = T.cast(dataset.targets, 'int32')
+        return T.mean(T.eq(self._y_pred(dataset.inputs), targets))
