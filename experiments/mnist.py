@@ -16,7 +16,7 @@ validation_data = marmot.datasets.FlatDataset(validation_data[0], validation_dat
 inputs  = marmot.layers.Input(28 * 28) # Each MNIST image has size 28*28
 hidden  = marmot.layers.Feedforward(prev_layer=inputs, n=1000)
 softmax = marmot.layers.Softmax(prev_layer=hidden, n=10)
-l2reg   = marmot.layers.L2Reg(prev_layer=softmax, reg_weight = 1e-3)
+l2reg   = marmot.layers.L2Reg(prev_layer=softmax, reg_weight = 1e-5)
 
 # Define a learning strategy
 learning_rule = marmot.sgd.Adadelta(decay = 0.90, epsilon = 1e-6)
@@ -24,7 +24,7 @@ strategy = marmot.sgd.SGD(learning_rule=learning_rule)
 
 # Initialize and run the training loop
 marmot.train_loop(
-  softmax, 
+  l2reg, 
   strategy, 
   training_data, 
   validation_data, 
