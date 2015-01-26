@@ -94,35 +94,25 @@ class Softmax(Cost):
 
         targets = T.cast(dataset.targets, 'int32')
 
-        # y.shape[-1] is (symbolically) the number of rows in y, 
-        # i.e. the number of examples in the minibatch.
-        # example_count = targets.shape[-1]
-
-        # T.arange(n) is a symbolic vector which will contain
-        # [0,1,2,... n-1]
-        # example_indices = T.arange(example_count)
-
-        # T.log(self.activations) is a matrix of Log-Probabilities
-        # with one row per example and one column per class.
+        # Calculate log-probabilities at each timestep, example, and class.
         lp = T.log(self.activations(dataset.inputs))
 
-        # lp[example_indices, y] is a vector containing the LP of
-        # the correct label for each example in the minibatch.
-
-        # negative log likelihood based on multiclass cross entropy error
-        #
-        # Theano's advanced indexing is limited
-        # therefore we reshape our n_steps x n_seq x n_classes tensor3 of probs
-        # to a (n_steps * n_seq) x n_classes matrix of probs
-        # so that we can use advanced indexing (i.e. get the probs which
-        # correspond to the true class)
-        # the labels y also must be flattened when we do this to use the
-        # advanced indexing
+        # Theano's advanced indexing is limited, so we reshape our 
+        # (n_steps, n_seq, n_classes) tensor of probs to a 
+        # (n_steps * n_seq, n_classes) matrix.
         flat_lp = T.reshape(lp, (lp.shape[0] * lp.shape[1], -1))
         flat_targets = targets.flatten(ndim=1)
-        return -T.mean(flat_lp[T.arange(flat_lp.shape[0]), flat_targets])
+        flat_errors = -flat_lp[T.arange(flat_lp.shape[0]), flat_targets]
 
-        # return -T.mean(errors)
+        # For each example, we exclude errors from steps past the length of 
+        # the example (i.e. padding outputs). We do this by first setting them
+        # to zero, and then getting all the nonzero values in the matrix.
+        errors = flat_errors.reshape((lp.shape[0], lp.shape[1]))
+        is_not_padding = T.arange(lp.shape[0]).dimshuffle(0, 'x').repeat(lp.shape[1], axis=1) 
+        is_not_padding = is_not_padding < dataset.target_lengths
+        errors = (errors * is_not_padding).nonzero_values()
+
+        return T.mean(errors)
 
 
     def accuracy(self, dataset):
