@@ -1,0 +1,18 @@
+extends layout
+
+block content
+  if model.type == 'logreg'
+    h1 Test logistic regression model
+  else
+    h1 Test RNTN model
+  hr
+  form(action='/#{modelId}/test', method='post', enctype='multipart/form-data')
+    .form-group
+      label(for='file') Upload a file with one example per line. For logistic regression, each line should be a sentence (tokens separated by spaces). For RNTN, each line should be a labelled parse tree (labels can be incorrect; they aren't used for anything but the parser expects them):
+      input.form-control(type='file', name='file')
+    input.btn.btn-primary(type='submit', value='Test')
+
+  if result
+    hr
+    h2 Test results
+    pre= result

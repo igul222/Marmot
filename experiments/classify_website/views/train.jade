@@ -1,0 +1,19 @@
+extends layout
+
+block head
+  script(src='/socket.io/socket.io.js')
+  script.
+    var socket = io();
+    socket.emit('subscribe', "#{modelId}");
+    socket.on('update', function(model) {
+      if(model.trained) {
+        window.location.href = "/#{modelId}/test";
+      } else {
+        document.getElementById('training-progress').textContent = model.trainingProgress;
+      }
+    });
+
+block content
+  h1 Training model...
+  hr
+  pre#training-progress [loading...]

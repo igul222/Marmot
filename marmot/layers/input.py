@@ -16,11 +16,8 @@ class Input(Layer):
         self.n_in = n
         self.n_out = n
 
-        # self.inputs = T.matrix(self.uuid + '_inputs')
-        # self.activations = self.inputs
-
         self.weight_params = []
         self.params = []
 
-    def activations(self, inputs):
-        return inputs
+    def activations(self, dataset):
+        return dataset.inputs

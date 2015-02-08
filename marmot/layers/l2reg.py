@@ -21,3 +21,6 @@ class L2Reg(Cost):
 
     def accuracy(self, dataset):
         return self._prev_layer.accuracy(dataset)
+
+    def predictions(self, dataset):
+        return self._prev_layer.predictions(dataset)

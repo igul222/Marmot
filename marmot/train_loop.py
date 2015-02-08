@@ -16,7 +16,8 @@ def train_loop(model,
                validation_data,
                min_patience=50,
                patience_factor=2,
-               validation_frequency=1):
+               validation_frequency=3,
+               silent=False):
 
     """Run to completion a training loop with early stopping."""
 
@@ -28,6 +29,7 @@ def train_loop(model,
     epoch = 0
     best_validation_accuracy = -numpy.inf
     best_validation_epoch = 0
+    best_param_dump = None
 
     while epoch < max(validation_frequency, min_patience, best_validation_epoch * patience_factor):
         epoch += 1
@@ -36,11 +38,12 @@ def train_loop(model,
         # training_data.shuffle()
         mean_cost = train()
 
-        print 'epoch {0}: took {1}s, mean training cost {2}'.format(
-            epoch,
-            time.time() - start_time,
-            mean_cost
-            )
+        if not silent:
+            print 'epoch {0}: took {1}s, mean training cost {2}'.format(
+                epoch,
+                time.time() - start_time,
+                mean_cost
+                )
 
         if epoch % validation_frequency == 0:
 
@@ -50,14 +53,21 @@ def train_loop(model,
             if validation_accuracy > best_validation_accuracy:
                 best_validation_accuracy = validation_accuracy
                 best_validation_epoch = epoch
+                best_param_dump = model.dump_params()
 
-            print 'epoch {0}: training accuracy {1}%, validation accuracy {2}% (best is {3}% from {4} epochs ago)'.format(
-                epoch,
-                training_accuracy * 100.,
-                validation_accuracy * 100.,
-                best_validation_accuracy * 100.,
-                epoch - best_validation_epoch
-                )
+            if not silent:
+                print 'epoch {0}: training accuracy {1}%, validation accuracy {2}% (best is {3}% from {4} epochs ago)'.format(
+                    epoch,
+                    training_accuracy * 100.,
+                    validation_accuracy * 100.,
+                    best_validation_accuracy * 100.,
+                    epoch - best_validation_epoch
+                    )
+
+    return {
+        'accuracy': best_validation_accuracy * 100.,
+        'param_dump': best_param_dump
+    }
 
 def _accuracy_function(model, dataset):
     """

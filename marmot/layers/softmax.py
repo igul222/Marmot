@@ -5,27 +5,14 @@ import theano
 import theano.tensor as T
 
 class Softmax(Cost):
-    """Multi-class Logistic Regression Class
-
-    The logistic regression is fully described by a weight matrix :math:`W`
-    and bias vector :math:`b`. Classification is done by projecting data
-    points onto a set of hyperplanes, the distance to which is used to
-    determine a class membership probability.
-    """
+    """Softmax layer."""
 
     def __init__(self, prev_layer, n):
-        """Initialize the parameters of the logistic regression
-
-        :type n: int
-        :param n: number of units, the dimension of the space in
-                      which the labels lie
-        """
         super(Softmax, self).__init__()
 
         self.n_in = prev_layer.n_in
         self.n_out = n
 
-        # self.inputs = prev_layer.inputs
         self._prev_layer = prev_layer
         
         # Initialize the weights as a matrix of zeros with shape (n_in, n_out).
@@ -34,7 +21,6 @@ class Softmax(Cost):
                 (prev_layer.n_out, self.n_out),
                 dtype=theano.config.floatX
             ),
-            name=self.uuid + '_weights',
             borrow=True
         )
 
@@ -44,7 +30,6 @@ class Softmax(Cost):
                 (self.n_out,),
                 dtype=theano.config.floatX
             ),
-            name=self.uuid + '_biases',
             borrow=True
         )
 
@@ -52,77 +37,79 @@ class Softmax(Cost):
         self.weight_params = prev_layer.weight_params + [self._weights]
         self.params = prev_layer.params + [self._weights, self._biases]
 
-        # Targets variable that the model uses to calculate cost and accuracy;
-        # for this model, a 1-dimensional vector of ints.
-        # self.targets = T.ivector(self.uuid + '_targets')
+    def activations(self, dataset):
+        # We'll get around to implementing this if we find we ever actually
+        # need it.
+        raise NotImplemented
 
-        # Dot the inputs with the weights, add the biases, and apply softmax.
-        # Softmax activations can be interpreted as P(y|x)
-        # self.activations = T.nnet.softmax(T.dot(prev_layer.activations, weights) + biases)
+    def log_activations(self, dataset):
+        # The reason we don't just do T.log(self.activations) is that 
+        # (for reasons I don't understand) Theano's numerical stability 
+        # optimization for log-softmax doesn't get applied, resulting in NaNs, 
+        # which are no fun. Instead, we manually apply that optimization here.
 
-        # Predicted value of y = the index of the P(y|x) vector whose value is maximal.
-        # self._y_pred = T.argmax(self.activations, axis=1)
+        weighted_inputs = T.dot(
+            self._prev_layer.activations(dataset),
+            self._weights
+        ) + self._biases
 
-    def activations(self, inputs):
-        # Dot the inputs with the weights, add the biases, and apply softmax.
-        # Softmax activations can be interpreted as P(y|x)
-        weighted_inputs = T.dot(self._prev_layer.activations(inputs), self._weights) + self._biases
+        def logsumexp(x, axis=None, keepdims=True):
+            """A numerically stable version of log(sum(exp(x)))."""
+            x_max = T.max(x, axis=axis, keepdims=True)
+            preres = T.log(T.sum(T.exp(x - x_max),axis=axis,keepdims=keepdims))
+            return preres + x_max
 
-        # T.nnet.softmax will not operate on T.tensor3 types, only matrices
-        # We take our n_steps x n_seq x n_classes output from the net
-        # and reshape it into a (n_steps * n_seq) x n_classes matrix
-        # apply softmax, then reshape back
-        reshaped = T.reshape(weighted_inputs, (weighted_inputs.shape[0] * weighted_inputs.shape[1], -1))
-        reshaped_softmax = T.nnet.softmax(reshaped)
-        return T.reshape(reshaped_softmax, weighted_inputs.shape)
+        # log_softmax(vector) = vector - logsumexp(vector)
+        return weighted_inputs - logsumexp(
+            weighted_inputs, 
+            axis=weighted_inputs.ndim - 1
+        )
 
-    def _y_pred(self, inputs):
-        # Predicted value of y = the index of the P(y|x) vector whose value is maximal.
-        return T.argmax(self.activations(inputs), axis=inputs.type.ndim - 1)
+    def predictions(self, dataset):
+        log_activations = self.log_activations(dataset)
+        return T.argmax(log_activations, axis=log_activations.ndim - 1)
+
+    # TODO: write a test for this
+    @staticmethod
+    def _exclude_padding(matrix, lengths):
+        """Given an (m, n) matrix of results and a length-m vector of sequence
+           lengths, return all values in the matrix where n < lengths[m]. Use
+           this to strip away padding outputs before calculating e.g. cost.
+           """
+
+        not_padding = (T.arange(matrix.shape[0]) \
+                        .dimshuffle(0, 'x') \
+                        .repeat(matrix.shape[1], axis=1)) < lengths
+
+        # To prevent actual zero values from being ignored, we add an offset
+        # before stripping nonzero values and then subtract that offset later.
+        offset = 1 - matrix.min()
+        return ((matrix + offset) * not_padding).nonzero_values() - offset
 
     def cost(self, dataset):
-        """Return the mean of the negative log-likelihood of the prediction
-        of this model under a given target distribution.
-
-        :type y: theano.tensor.TensorType
-        :param y: corresponds to a vector that gives for each example the
-                  correct label
-
-        Note: we use the mean instead of the sum so that
-              the learning rate is less dependent on the batch size
-        """
-
         targets = T.cast(dataset.targets, 'int32')
 
-        # Calculate log-probabilities at each timestep, example, and class.
-        lp = T.log(self.activations(dataset.inputs))
+        # # Calculate log-probabilities at each timestep, example, and class.
+        lp = self.log_activations(dataset)
 
-        # Theano's advanced indexing is limited, so we reshape our 
-        # (n_steps, n_seq, n_classes) tensor of probs to a 
-        # (n_steps * n_seq, n_classes) matrix.
-        flat_lp = T.reshape(lp, (lp.shape[0] * lp.shape[1], -1))
-        flat_targets = targets.flatten(ndim=1)
-        flat_errors = -flat_lp[T.arange(flat_lp.shape[0]), flat_targets]
-
-        # For each example, we exclude errors from steps past the length of 
-        # the example (i.e. padding outputs). We do this by first setting them
-        # to zero, and then getting all the nonzero values in the matrix.
-        errors = flat_errors.reshape((lp.shape[0], lp.shape[1]))
-        is_not_padding = T.arange(lp.shape[0]).dimshuffle(0, 'x').repeat(lp.shape[1], axis=1) 
-        is_not_padding = is_not_padding < dataset.target_lengths
-        errors = (errors * is_not_padding).nonzero_values()
-
-        return T.mean(errors)
-
+        if lp.ndim == 3:
+            # Theano's advanced indexing is limited, so we reshape our 
+            # (n_steps, n_seq, n_classes) tensor of probs to a 
+            # (n_steps * n_seq, n_classes) matrix, pluck the target activations,
+            # and reshape back.
+            flat_lp = T.reshape(lp, (lp.shape[0] * lp.shape[1], -1))
+            flat_targets = targets.flatten(ndim=1)
+            flat_errors = -flat_lp[T.arange(flat_lp.shape[0]), flat_targets]
+            errors = flat_errors.reshape((lp.shape[0], lp.shape[1]))
+            return T.mean(self._exclude_padding(errors, dataset.lengths))
+        else:
+            errors = -lp[T.arange(lp.shape[0]), targets]
+            return T.mean(errors)
 
     def accuracy(self, dataset):
-        """Return a float representing the number of errors in the minibatch
-        over the total number of examples of the minibatch ; zero one
-        loss over the size of the minibatch
-
-        :type y: theano.tensor.TensorType
-        :param y: corresponds to a vector that gives for each example the
-                  correct label
-        """
         targets = T.cast(dataset.targets, 'int32')
-        return T.mean(T.eq(self._y_pred(dataset.inputs), targets))
+        results = T.eq(self.predictions(dataset), targets)
+        if results.ndim == 2:
+            return T.mean(self._exclude_padding(results, dataset.lengths))
+        else:
+            return T.mean(results)

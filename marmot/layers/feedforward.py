@@ -31,25 +31,21 @@ class Feedforward(Layer):
             )
         self._weights = theano.shared(
             value=weight_values, 
-            name=self.uuid + '_weights',
             borrow=True
             )
 
         bias_values = numpy.zeros((self.n_out,), dtype=theano.config.floatX)
         self._biases = theano.shared(
             value=bias_values,
-            name=self.uuid + '_biases',
             borrow=True
             )
 
         self.weight_params = prev_layer.weight_params + [self._weights]
         self.params = prev_layer.params + [self._weights, self._biases]
 
-        # self.activations = T.tanh(
-        #     T.dot(prev_layer.activations, weights) + biases
-        #     )
-
-    def activations(self, inputs):
+    def activations(self, dataset):
         return self._activation_fn(
-            T.dot(self._prev_layer.activations(inputs), self._weights) + self._biases
-            )
+            T.dot(
+                self._prev_layer.activations(dataset), 
+                self._weights) + self._biases
+        )

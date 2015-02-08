@@ -2,9 +2,9 @@ import unittest
 import numpy
 import theano
 
-from marmot.datasets import Dataset
+from marmot.datasets import Sequence
 
-class DatasetTest(unittest.TestCase):
+class SequenceTest(unittest.TestCase):
 
     # def test_create_flat(self):
     #     inputs = [[1,3,5], [2,4,6]]

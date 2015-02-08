@@ -22,7 +22,8 @@ class Recurrent(Layer):
                                 high=.01),
             dtype=theano.config.floatX)
 
-        self._input_weights = theano.shared(value=input_weight_values, borrow=True)
+        self._input_weights = theano.shared(value=input_weight_values, 
+                                            borrow=True)
 
         # Initialize recurrent weights
         recurrent_weight_values = numpy.asarray(
@@ -31,7 +32,8 @@ class Recurrent(Layer):
                                 high=.01),
             dtype=theano.config.floatX)
 
-        self._recurrent_weights = theano.shared(value=recurrent_weight_values, borrow=True)
+        self._recurrent_weights = theano.shared(value=recurrent_weight_values, 
+                                                borrow=True)
 
         # Initialize h0 (initial hidden state)
         h0_values = numpy.zeros((n,), dtype=theano.config.floatX)
@@ -44,9 +46,13 @@ class Recurrent(Layer):
         self.weight_params = [self._input_weights, self._recurrent_weights]
         self.params = self.weight_params + [self._h0, self._biases]
 
-    def activations(self, inputs):
-        prev_layer_activations = self._prev_layer.activations(inputs)
-        biased_weighted_inputs = T.dot(prev_layer_activations, self._input_weights) + self._biases
+    def activations(self, dataset):
+        prev_layer_activations = self._prev_layer.activations(dataset)
+        
+        biased_weighted_inputs = T.dot(
+            prev_layer_activations, 
+            self._input_weights
+        ) + self._biases
 
         def step(current_biased_weighted_inputs, last_activations):
             return T.tanh(
@@ -57,7 +63,9 @@ class Recurrent(Layer):
         activations, updates = theano.scan(
             step,
             sequences=biased_weighted_inputs,
-            outputs_info=T.alloc(self._h0, inputs.shape[1], self.n_out)
+            outputs_info=T.alloc(self._h0, 
+                                 prev_layer_activations.shape[1], 
+                                 self.n_out)
             )
 
         return activations

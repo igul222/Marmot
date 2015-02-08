@@ -1,0 +1,23 @@
+extends layout
+
+block content
+  .row
+    .col-sm-6
+      h1 Logistic regression
+      hr
+      form(action='/train', method='post', enctype='multipart/form-data')
+        input(type='hidden', name='model', value='logreg')
+        .form-group
+          label(for='file') Upload a tsv file with columns <code>label</code>, <code>string</code> (tokens separated by spaces):
+          input.form-control(type='file', name='file')
+        input.btn.btn-primary(type='submit', value='Train')
+
+    .col-sm-6
+      h1 RNTN
+      hr
+      form(action='/train', method='post', enctype='multipart/form-data')
+        input(type='hidden', name='model', value='rntn')
+        .form-group
+          label(for='file') Upload a tsv file with columns <code>label</code>, <code>string</code> (tokens separated by spaces):
+          input.form-control(type='file', name='file')
+        input.btn.btn-primary(type='submit', value='Train')

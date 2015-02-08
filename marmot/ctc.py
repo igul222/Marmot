@@ -20,6 +20,7 @@ PADDING = -1
 
 def _log_add(log_a, log_b):
     """Theano expression for log(a+b) given log(a) and log(b)."""
+    # TODO fix potential axis bug here!!! (it might be subtracting the wrong vals)
     smaller = T.minimum(log_a, log_b)
     larger = T.maximum(log_a, log_b)
     return larger + T.log1p(T.exp(smaller - larger))

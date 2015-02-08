@@ -1,2 +1,3 @@
-from sequence_dataset import SequenceDataset
-from flat_dataset import FlatDataset
+from sequences import Sequences
+from simple import Simple
+from trees import Trees

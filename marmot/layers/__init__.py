@@ -5,3 +5,4 @@ from cost import Cost
 from softmax import Softmax
 from l2reg import L2Reg
 from ctc import CTC
+from recursive import Recursive
